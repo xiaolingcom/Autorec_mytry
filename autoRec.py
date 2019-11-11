@@ -101,11 +101,11 @@ class autoEncoder():
             #转换为tensor格式
             train=t.from_numpy(tmpTrain).float().to(device)
             test=t.from_numpy(tmpTest).float().to(device)
-            testMask=t.from_numpy(1*tmptestMask).float().to(device) #bool转换为int
+            mask=t.from_numpy(1*tmptestMask).float().to(device) #bool转换为int
 
             y_pred=self.model(train)
             #用测试集的误差去衡量泛化误差,这个时候的参数应该训练好了
-            pred_loss=self.loss_mse(y_pred*testMask,test)/batch_len
+            pred_loss=self.loss_mse(y_pred*mask,test)/batch_len
             v_loss=t.sum(self.V*self.V)
             w_loss=t.sum(self.W*self.W)
             batch_loss=pred_loss+self.V_regularWeight*v_loss+self.W_regularWeight*w_loss
@@ -137,7 +137,7 @@ class autoEncoder():
             if e%10==0 and e!=0:
                 self.saveModel()
                 test_epoch_loss=self.testModel(self.trainMat,self.testMat,self.testMask,1)
-                log("epoch %d/%d, test_epoch_loss=%.2"%(e, EPOCH, test_epoch_loss))
+                log("epoch %d/%d, test_epoch_loss=%.2f"%(e, EPOCH, test_epoch_loss))
                 self.step_losses.append(test_epoch_loss)
                 for i in range(len(self.step_losses)):
                     print("***************************")
@@ -159,11 +159,10 @@ class autoEncoder():
 
     def saveModel(self):
         history=dict()
-        histtory['losses']=self.train_losses
+        history['losses']=self.train_losses
         history['val_losses']=self.test_losses #验证
         ModelName=self.getModelName()
         
-        ModelName = self.getModelName()
         savePath = r'./' + dataset + r'/Model/' + ModelName + r'.pth'
         # t.save({
         #     'epoch': self.curEpoch,
@@ -179,7 +178,7 @@ class autoEncoder():
         #     }, savePath)
         print("save model : " + ModelName)
         
-        with open(r'./' + dataset + r'/History/' + ModelName + '.his', 'wb') as fs:
+        with open('./' + dataset + r'/History/' + ModelName + '.his', 'wb') as fs:
             pickle.dump(history, fs)
 
     def getModelName(self):
