@@ -28,7 +28,7 @@ class autoEncoder():
         #画图所要用到的数据
         self.train_losses=[]
         self.test_losses=[]
-        self.step_losses=[]#每10个epoch记录一次
+        self.step_losses=[]
 
     def prePareModel(self):
         #参数初始化
@@ -77,8 +77,8 @@ class autoEncoder():
             v_loss=t.sum(self.V*self.V) #t.sum而不是t.mm
             w_loss=t.sum(self.W*self.W) #*是element-wise操作
             batch_loss=pred_loss + self.V_regularWeight*v_loss +self.W_regularWeight*w_loss
-            epoch_loss+=batch_loss
-            log('step %d/%d, step_loss=%f'%(i,steps,batch_loss),save=False,oneline=True)
+            epoch_loss+=batch_loss.item()
+            log('step %d/%d, step_loss=%f'%(i,steps,batch_loss.item()),save=False,oneline=True)
             op.zero_grad() #清空梯度，不累加
             batch_loss.backward()
             op.step()
@@ -109,7 +109,7 @@ class autoEncoder():
             v_loss=t.sum(self.V*self.V)
             w_loss=t.sum(self.W*self.W)
             batch_loss=pred_loss+self.V_regularWeight*v_loss+self.W_regularWeight*w_loss
-            epoch_loss+=batch_loss
+            epoch_loss+=batch_loss.item()  #item()将tensor转成一个数
 
         return epoch_loss
 
@@ -134,20 +134,20 @@ class autoEncoder():
             #调整学习率并保存
             self.curLr = self.adjust_learning_rate(self.optimizer, e)
             self.curEpoch=e #记录当前的EPOCH，用于保存model
-            if e%10==0 and e!=0:
-                self.saveModel()
-                test_epoch_loss=self.testModel(self.trainMat,self.testMat,self.testMask,1)
-                log("epoch %d/%d, test_epoch_loss=%.2f"%(e, EPOCH, test_epoch_loss))
-                self.step_losses.append(test_epoch_loss)
-                for i in range(len(self.step_losses)):
-                    print("***************************")
-                    print("rmse = %.4f"%(self.step_rmse[i]))
-                    print("***************************")
+            # if e%10==0 and e!=0:
+            #     self.saveModel()
+            #     test_epoch_loss=self.testModel(self.trainMat,self.testMat,self.testMask,1)
+            #     log("epoch %d/%d, test_epoch_loss=%.2f"%(e, EPOCH, test_epoch_loss))
+            #     self.step_losses.append(test_epoch_loss)
+            #     # for i in range(len(self.step_losses)):
+            #     #     print("***************************")
+            #     #     print("rmse = %.4f"%(self.step_rmse[i]))
+            #     #     print("***************************")
         #测试
-        test_epoch_loss=self.testModel(self.trainMat,self.testMat,self.testMask)
+        test_epoch_loss=self.testModel(self.trainMat,self.testMat,self.testMask,1)
         self.writeResult(test_epoch_loss)
         log("\n")
-        log("test_rmse=%f"%(test_epoch_loss))
+        log("test_epoch_loss=%f"%(test_epoch_loss)) #rmse没有数出来，最终的评估指标
         self.getModelName()
 
     #根据epoch数调整学习率
@@ -199,15 +199,6 @@ class autoEncoder():
             f.write(dataset + '\r\n')
             f.write(modelName + '\r\n')
             f.write(str(result) + '\r\n')
-  
-    def writeResult(self, result):
-        with open(resultFile, mode='a') as f:
-            modelName = self.getModelName()
-            f.write('\r\n')
-            f.write(dataset + '\r\n')
-            f.write(modelName + '\r\n')
-            f.write(str(result) + '\r\n')
-
 
 #####################################################################################
 if __name__=='__main__':
